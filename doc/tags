@@ -1,0 +1,15 @@
+:AIContext	nvim-ai.txt	/*:AIContext*
+:AIContextStop	nvim-ai.txt	/*:AIContextStop*
+nvim-ai-api	nvim-ai.txt	/*nvim-ai-api*
+nvim-ai-commands	nvim-ai.txt	/*nvim-ai-commands*
+nvim-ai-configuration	nvim-ai.txt	/*nvim-ai-configuration*
+nvim-ai-contents	nvim-ai.txt	/*nvim-ai-contents*
+nvim-ai-how-it-works	nvim-ai.txt	/*nvim-ai-how-it-works*
+nvim-ai-introduction	nvim-ai.txt	/*nvim-ai-introduction*
+nvim-ai-requirements	nvim-ai.txt	/*nvim-ai-requirements*
+nvim-ai-setup	nvim-ai.txt	/*nvim-ai-setup*
+nvim-ai.get_config()	nvim-ai.txt	/*nvim-ai.get_config()*
+nvim-ai.run()	nvim-ai.txt	/*nvim-ai.run()*
+nvim-ai.setup()	nvim-ai.txt	/*nvim-ai.setup()*
+nvim-ai.stop()	nvim-ai.txt	/*nvim-ai.stop()*
+nvim-ai.txt	nvim-ai.txt	/*nvim-ai.txt*

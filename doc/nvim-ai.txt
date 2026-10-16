@@ -1,0 +1,98 @@
+*nvim-ai.txt*          Editor-contextualized AI agent for Neovim
+
+==============================================================================
+CONTENTS                                                  *nvim-ai-contents*
+
+    1. Introduction .................................. |nvim-ai-introduction|
+    2. Requirements .................................. |nvim-ai-requirements|
+    3. Setup ................................................. |nvim-ai-setup|
+    4. Commands ........................................... |nvim-ai-commands|
+    5. Configuration ................................. |nvim-ai-configuration|
+    6. How it works ................................... |nvim-ai-how-it-works|
+    7. API ..................................................... |nvim-ai-api|
+
+==============================================================================
+1. INTRODUCTION                                      *nvim-ai-introduction*
+
+nvim-ai turns the position you invoked it from into context for an
+interactive coding agent, runs that agent in a tmux split pane, and mirrors
+the agent's change list into Neovim's quickfix list.
+
+==============================================================================
+2. REQUIREMENTS                                      *nvim-ai-requirements*
+
+    - Neovim >= 0.10
+    - An agent CLI (defaults to `pi`)
+    - tmux (optional; falls back to a Neovim terminal split)
+    - git and vim-fugitive (optional; used to review unstaged changes)
+
+==============================================================================
+3. SETUP                                                    *nvim-ai-setup*
+
+                                                    *nvim-ai.setup()*
+require("nvim-ai").setup({ ... })
+
+Configures the plugin and registers its commands, mapping and autocmds.
+Calling it more than once is safe.
+
+==============================================================================
+4. COMMANDS                                            *nvim-ai-commands*
+
+                                                        *:AIContext*
+:AIContext      Ask for a request and launch the contextual agent in a tmux
+                split pane. The current buffer is saved first.
+
+                                                    *:AIContextStop*
+:AIContextStop  Stop watching the change file.
+
+Default mapping: `<leader>ac` in normal mode.
+
+==============================================================================
+5. CONFIGURATION                                  *nvim-ai-configuration*
+
+All options are passed to |nvim-ai.setup()|.
+
+    command                     string   command to create (default "AIContext")
+    stop_command                string   stop command (default "AIContextStop")
+    keymap                      string   normal-mode mapping (default "<leader>ac")
+    cmd                         string   agent executable (default "pi")
+    extra_args                  table    extra args (default {})
+    append_system_prompt_flag   string   flag (default "--append-system-prompt")
+    change_file                 string   change list path, relative to cwd
+    split                       string   tmux split flag: "-h" or "-v"
+    detach                      boolean  keep focus in Neovim (default false)
+    tmux                        string   tmux executable (default "tmux")
+    poll_interval               number   change-file poll interval in ms (500)
+    open_quickfix               boolean  auto-open quickfix (default false)
+    errorformat                 string   quickfix errorformat
+
+==============================================================================
+6. HOW IT WORKS                                    *nvim-ai-how-it-works*
+
+  1. Prompts `AI request:` in the command line.
+  2. Saves the current buffer.
+  3. If the repository has unstaged changes, warns and asks whether to
+     proceed; on "No" it opens fugitive.
+  4. Writes an appended system prompt to a temp file, carrying the absolute
+     file path and cursor line, and launches the agent in a tmux split pane.
+  5. Polls `<cwd>/.currentChange` and parses each
+     `filepath:line:col - summary` line into the quickfix list. Emptying the
+     file clears the list.
+
+The agent is asked to keep the change file cumulative across the whole
+session: first round plus later adjustments, minus anything replaced or
+reverted.
+
+==============================================================================
+7. API                                                        *nvim-ai-api*
+
+                                                    *nvim-ai.run()*
+require("nvim-ai").run()        Launch a request programmatically.
+
+                                                    *nvim-ai.stop()*
+require("nvim-ai").stop()       Stop watching the change file.
+
+                                                    *nvim-ai.get_config()*
+require("nvim-ai").get_config() Return the current merged options.
+
+vim:tw=78:ts=8:noet:ft=help:norl:
