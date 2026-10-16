@@ -90,14 +90,22 @@ local function build_system_prompt(file, line)
 			.. "you should also put an inline comment for each change you do (if the filetype has a comment format), explaining the change in the comment. "
 			.. "General notes, clarifying questions and other broader comments should still be reported in the summary of the agent's session round.",
 		"",
-		"Moreover, produce a list of the positions you changed in the file `"
+		"You may keep talking with the user in this same session across multiple rounds of changes. "
+			.. "Whenever you make changes — in this round or in any later round — you must always report them in the change file described below, "
+			.. "and you must rewrite that file from scratch every time.",
+		"",
+		"The file must always describe the whole session: include every change you have made since the start of the session that is still present in the current state of the files. "
+			.. "In other words, it is the first round plus any later adjustments, minus anything that a later request replaced or reverted. "
+			.. "Never report only the changes from the most recent round; the file must be the complete and current picture of the session's changes.",
+		"",
+		"Produce that list of positions in the file `"
 			.. change_path
 			.. "`, one position per line, using exactly this format:",
 		"",
 		"    filepath:line:col - <very short summary of change>",
 		"",
 		"Use absolute file paths. List the positions in a meaningful order (for example top-to-bottom per file) so the user can review them quickly in the quickfix list.",
-		"If you made no changes, leave the file empty.",
+		"If no changes are still present, leave the file empty.",
 	}
 	return table.concat(parts, "\n")
 end
