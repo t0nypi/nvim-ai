@@ -47,6 +47,10 @@ Calling it more than once is safe.
 
 Default mapping: `<leader>ac` in normal mode.
 
+The mapping also works in visual mode: the selection is captured and the
+appended system prompt describes its start/end position instead of the cursor
+line. Set `visual_keymap` to override or disable (`false`) the visual mapping.
+
 ==============================================================================
 5. CONFIGURATION                                  *nvim-ai-configuration*
 
@@ -55,6 +59,7 @@ All options are passed to |nvim-ai.setup()|.
     command                     string   command to create (default "AIContext")
     stop_command                string   stop command (default "AIContextStop")
     keymap                      string   normal-mode mapping (default "<leader>ac")
+    visual_keymap               string   visual-mode mapping; nil = `keymap`, false = off
     cmd                         string   agent executable (default "pi")
     extra_args                  table    extra args (default {})
     append_system_prompt_flag   string   flag (default "--append-system-prompt")
@@ -74,7 +79,8 @@ All options are passed to |nvim-ai.setup()|.
   3. If the repository has unstaged changes, warns and asks whether to
      proceed; on "No" it opens fugitive.
   4. Writes an appended system prompt to a temp file, carrying the absolute
-     file path and cursor line, and launches the agent in a tmux split pane.
+     file path and either the cursor line or, for a visual selection, its
+     start/end position, and launches the agent in a tmux split pane.
   5. Polls `<cwd>/.currentChange` and parses each
      `filepath:line:col - summary` line into the quickfix list. Emptying the
      file clears the list.

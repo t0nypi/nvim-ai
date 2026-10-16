@@ -3,19 +3,54 @@ local config = require("nvim-ai.config")
 
 local M = {}
 
----Build the appended system prompt for a given file/line context.
----@param file string absolute path of the invoking buffer
----@param line integer 1-based cursor line
+---@class NvimAiRange
+---@field srow integer 1-based start line
+---@field scol integer 1-based start column
+---@field erow integer 1-based end line
+---@field ecol integer 1-based end column
+---@field mode string|nil visual mode ("v", "V" or block)
+
+---@class NvimAiContext
+---@field file string absolute path of the invoking buffer
+---@field line integer|nil 1-based cursor line (normal mode)
+---@field range NvimAiRange|nil visual selection (visual mode)
+
+---Build the appended system prompt for a given context.
+---@param context NvimAiContext
 ---@return string
-function M.build(file, line)
+function M.build(context)
 	local change_path = vim.fs.joinpath(vim.fn.getcwd(), config.get().change_file)
+	local location
+	if context.range then
+		local r = context.range
+		if r.mode == "V" then
+			location = string.format(
+				"The request happens in the context of `%s`, specifically lines `%d` to `%d`.",
+				context.file,
+				r.srow,
+				r.erow
+			)
+		else
+			location = string.format(
+				"The request happens in the context of `%s`, specifically the selection from line `%d`, column `%d` to line `%d`, column `%d`.",
+				context.file,
+				r.srow,
+				r.scol,
+				r.erow,
+				r.ecol
+			)
+		end
+	else
+		location = string.format(
+			"The request happens in the context of `%s` at line `%d`.",
+			context.file,
+			context.line
+		)
+	end
 	local parts = {
 		"You have been invoked by the user to satisfy a request. "
-			.. "The request happens in the context of `"
-			.. file
-			.. "` at line `"
-			.. line
-			.. "`. "
+			.. location
+			.. " "
 			.. "If you need to change files in order to satisfy the user request, don't just produce a summary at the end of what you have done; "
 			.. "you should also put an inline comment for each change you do (if the filetype has a comment format), explaining the change in the comment. "
 			.. "General notes, clarifying questions and other broader comments should still be reported in the summary of the agent's session round.",

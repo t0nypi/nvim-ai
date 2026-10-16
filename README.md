@@ -13,7 +13,8 @@ command is configurable.
 ## Features
 
 - **Context-aware prompt** — appends a system prompt telling the agent which
-  file and line you invoked it from.
+  file and line you invoked it from, or the start/end position of the visual
+  selection when you invoke it from visual mode.
 - **Inline rationale** — asks the agent to comment each change it makes and to
   report broader notes in the session summary.
 - **Reviewable changes** — the agent writes `filepath:line:col - summary`
@@ -65,7 +66,9 @@ For local development, point lazy at the checkout:
 | `:AIContext` | Ask for a request and launch the contextual agent. |
 | `:AIContextStop` | Stop watching the change file. |
 
-Default mapping: `<leader>ac`.
+Default mapping: `<leader>ac` in normal mode. The same mapping works in visual
+mode: the selection is captured and the prompt describes its start/end position
+instead of the cursor line.
 
 The flow:
 
@@ -86,6 +89,8 @@ require("nvim-ai").setup({
   command = "AIContext",
   stop_command = "AIContextStop",
   keymap = "<leader>ac",
+  -- Visual-mode mapping. When nil it falls back to `keymap`; false disables it.
+  visual_keymap = nil,
 
   -- Agent executable and extra args (inserted before the append flag).
   cmd = "pi",

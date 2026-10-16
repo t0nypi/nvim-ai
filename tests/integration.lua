@@ -111,6 +111,50 @@ end, 100)
 assert_true(cleared, "quickfix cleared when file emptied")
 print("OK: quickfix cleared on empty file")
 
+-- visual selection context --------------------------------------------------
+captured = {}
+plugin.run({ range = { srow = 2, scol = 3, erow = 4, ecol = 5, mode = "v" } })
+local visual_prompt_file = captured[1][6]:match("'([^']*%.md)'")
+local visual_prompt = table.concat(vim.fn.readfile(visual_prompt_file), "\n")
+assert_true(
+	visual_prompt:match("selection from line `2`, column `3` to line `4`, column `5`") ~= nil,
+	"visual prompt has charwise selection range"
+)
+print("OK: visual charwise selection context")
+
+captured = {}
+plugin.run({ range = { srow = 3, scol = 1, erow = 5, ecol = 1, mode = "V" } })
+local linewise_prompt_file = captured[1][6]:match("'([^']*%.md)'")
+local linewise_prompt = table.concat(vim.fn.readfile(linewise_prompt_file), "\n")
+assert_true(
+	linewise_prompt:match("specifically lines `3` to `5`") ~= nil,
+	"visual prompt has linewise selection range"
+)
+print("OK: visual linewise selection context")
+
+-- selection range capture ---------------------------------------------------
+local selection = require("nvim-ai.selection")
+vim.api.nvim_buf_set_lines(0, 0, -1, false, { "aaaa", "bbbb", "cccc", "dddd" })
+vim.api.nvim_win_set_cursor(0, { 2, 1 })
+vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes("vj", true, false, true), "x", false)
+local charwise = selection.range()
+assert_eq(charwise.srow, 2, "charwise srow")
+assert_eq(charwise.scol, 2, "charwise scol")
+assert_eq(charwise.erow, 3, "charwise erow")
+assert_eq(charwise.ecol, 2, "charwise ecol")
+assert_eq(charwise.mode, "v", "charwise mode")
+vim.cmd("normal! \27")
+print("OK: selection range capture (charwise)")
+
+vim.api.nvim_win_set_cursor(0, { 1, 0 })
+vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes("Vj", true, false, true), "x", false)
+local linewise = selection.range()
+assert_eq(linewise.srow, 1, "linewise srow")
+assert_eq(linewise.erow, 2, "linewise erow")
+assert_eq(linewise.mode, "V", "linewise mode")
+vim.cmd("normal! \27")
+print("OK: selection range capture (linewise)")
+
 plugin.stop()
 print("ALL TESTS PASSED")
 vim.cmd("qa!")

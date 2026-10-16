@@ -6,6 +6,9 @@ M.defaults = {
 	command = "AIContext",
 	stop_command = "AIContextStop",
 	keymap = "<leader>ac",
+	-- Visual-mode mapping. When nil it falls back to `keymap`; set to false
+	-- to disable the visual mapping.
+	visual_keymap = nil,
 
 	-- Agent executable and extra arguments. `extra_args` are inserted before
 	-- the append-system-prompt flag, so they can carry model/provider flags.

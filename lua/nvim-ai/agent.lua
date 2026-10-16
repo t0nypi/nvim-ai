@@ -53,7 +53,10 @@ local function spawn_in_nvim(cmd)
 end
 
 ---Ask for a request and launch the contextual agent.
-function M.run()
+---@param ctx table|nil optional context; `{ range = NvimAiRange }` for a visual
+---                         selection, otherwise the cursor line is used
+function M.run(ctx)
+	ctx = ctx or {}
 	local opts = config.get()
 	local file = vim.api.nvim_buf_get_name(0)
 	if file == "" then
@@ -88,12 +91,17 @@ function M.run()
 		end
 	end
 
-	local line = vim.api.nvim_win_get_cursor(0)[1]
+	local context
+	if ctx.range then
+		context = { file = file, range = ctx.range }
+	else
+		context = { file = file, line = vim.api.nvim_win_get_cursor(0)[1] }
+	end
 	local change_path = vim.fs.joinpath(cwd, opts.change_file)
 	-- reset so we only react to what this run produces
 	vim.fn.writefile({}, change_path)
 
-	local prompt_file = prompt.write_temp_file(prompt.build(file, line))
+	local prompt_file = prompt.write_temp_file(prompt.build(context))
 	local cmd = agent_command(request, prompt_file)
 
 	quickfix.start(change_path)
