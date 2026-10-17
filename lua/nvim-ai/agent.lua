@@ -52,6 +52,47 @@ local function spawn_in_nvim(cmd)
 	return true
 end
 
+---Collect the request by opening an editable scratch buffer. The request is
+---taken from the buffer's text when the user saves it with `:write`; the buffer
+---is then closed and `on_submit` is called with the text.
+---@param on_submit fun(request: string)
+local function request_from_buffer(on_submit)
+	-- `acwrite` makes `:write` fire `BufWriteCmd` instead of touching disk, so
+	-- the buffer is purely in-memory and we control what happens on save.
+	local buf = vim.api.nvim_create_buf(false, true)
+	vim.bo[buf].buftype = "acwrite"
+	vim.bo[buf].bufhidden = "wipe"
+	vim.bo[buf].filetype = "markdown"
+	vim.api.nvim_buf_set_name(buf, "AI request")
+
+	-- Show the request buffer in a 7-line-high horizontal split pinned to the
+	-- bottom of the editor and start typing right away.
+	-- CHANGE: was a vertical split; use a bottom-anchored 7-line horizontal split.
+	vim.cmd("botright 7split")
+	vim.api.nvim_win_set_buf(0, buf)
+	vim.cmd("startinsert")
+
+	vim.api.nvim_create_autocmd("BufWriteCmd", {
+		buffer = buf,
+		once = true,
+		callback = function()
+			local lines = vim.api.nvim_buf_get_lines(buf, 0, -1, false)
+			local request = vim.trim(table.concat(lines, "\n"))
+			-- mark clean so no "unsaved changes" prompt appears on deletion
+			vim.bo[buf].modified = false
+			-- delete outside the autocmd to avoid re-entrancy while writing
+			vim.schedule(function()
+				pcall(vim.api.nvim_buf_delete, buf, { force = true })
+				if request == "" then
+					util.notify("Empty request, aborted")
+					return
+				end
+				on_submit(request)
+			end)
+		end,
+	})
+end
+
 ---Ask for a request and launch the contextual agent.
 ---@param ctx table|nil optional context; `{ range = NvimAiRange }` for a visual
 ---                         selection, otherwise the cursor line is used
@@ -68,13 +109,8 @@ function M.run(ctx)
 		return
 	end
 
-	local request = vim.fn.input("AI request: ")
-	if request == "" then
-		util.notify("Empty request, aborted")
-		return
-	end
-
-	-- Save the buffer before the agent reads/modifies it.
+	-- Save the invoking buffer before the request buffer replaces the window,
+	-- so the agent reads/modifies a consistent on-disk state.
 	local ok, err = pcall(vim.cmd, "write")
 	if not ok then
 		util.notify("Failed to save file: " .. tostring(err), vim.log.levels.ERROR)
@@ -97,26 +133,30 @@ function M.run(ctx)
 	else
 		context = { file = file, line = vim.api.nvim_win_get_cursor(0)[1] }
 	end
-	local change_path = vim.fs.joinpath(cwd, opts.change_file)
-	-- reset so we only react to what this run produces
-	vim.fn.writefile({}, change_path)
 
-	local prompt_file = prompt.write_temp_file(prompt.build(context))
-	local cmd = agent_command(request, prompt_file)
+	-- Open the request buffer first; everything below runs once the user saves it.
+	request_from_buffer(function(request)
+		local change_path = vim.fs.joinpath(cwd, opts.change_file)
+		-- reset so we only react to what this run produces
+		vim.fn.writefile({}, change_path)
 
-	quickfix.start(change_path)
+		local prompt_file = prompt.write_temp_file(prompt.build(context))
+		local cmd = agent_command(request, prompt_file)
 
-	local spawned
-	if vim.env.TMUX and vim.env.TMUX ~= "" then
-		spawned = spawn_in_tmux(cmd, cwd)
-	else
-		util.notify("Not inside tmux; falling back to a Neovim terminal", vim.log.levels.WARN)
-		spawned = spawn_in_nvim(cmd)
-	end
+		quickfix.start(change_path)
 
-	if not spawned then
-		quickfix.stop()
-	end
+		local spawned
+		if vim.env.TMUX and vim.env.TMUX ~= "" then
+			spawned = spawn_in_tmux(cmd, cwd)
+		else
+			util.notify("Not inside tmux; falling back to a Neovim terminal", vim.log.levels.WARN)
+			spawned = spawn_in_nvim(cmd)
+		end
+
+		if not spawned then
+			quickfix.stop()
+		end
+	end)
 end
 
 return M
