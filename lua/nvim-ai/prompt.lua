@@ -49,23 +49,32 @@ function M.build(context)
 	end
 	local parts = {
 		"You have been invoked by the user to satisfy a request. "
-			.. location
-			.. " "
-			.. "If you need to change files in order to satisfy the user request, don't just produce a summary at the end of what you have done; "
-			.. "you should also put an inline comment for each change you do (if the filetype has a comment format), explaining the change in the comment. "
-			.. "General notes, clarifying questions and other broader comments should still be reported in the summary of the agent's session round.",
+		.. location
+		.. " "
+		..
+		"If you need to change files in order to satisfy the user request, don't just produce a summary at the end of what you have done; "
+		..
+		"you should also put an inline comment for each change you do (if the filetype has a comment format), explaining the change in the comment. "
+		..
+		"General notes, clarifying questions and other broader comments should still be reported in the summary of the agent's session round.",
 		"",
+		"If the request of the user is to explain or describe some code, you should create a path in the codebase by leaving comments in each relevant point."
+		..
+		"When creating the quickfix list, the points in code with these comments should be in the correct order to have a good and clear explaination",
 		"You may keep talking with the user in this same session across multiple rounds of changes. "
-			.. "Whenever you make changes — in this round or in any later round — you must always report them in the change file described below, "
-			.. "and you must rewrite that file from scratch every time.",
+		..
+		"Whenever you make changes — in this round or in any later round — you must always report them in the change file described below, "
+		.. "and you must rewrite that file from scratch every time.",
 		"",
 		"The file must always describe the whole session: include every change you have made since the start of the session that is still present in the current state of the files. "
-			.. "In other words, it is the first round plus any later adjustments, minus anything that a later request replaced or reverted. "
-			.. "Never report only the changes from the most recent round; the file must be the complete and current picture of the session's changes.",
+		..
+		"In other words, it is the first round plus any later adjustments, minus anything that a later request replaced or reverted. "
+		..
+		"Never report only the changes from the most recent round; the file must be the complete and current picture of the session's changes.",
 		"",
 		"Produce that list of positions in the file `"
-			.. change_path
-			.. "`, one position per line, using exactly this format:",
+		.. change_path
+		.. "`, one position per line, using exactly this format:",
 		"",
 		"    filepath:line:col - <very short summary of change>",
 		"",
