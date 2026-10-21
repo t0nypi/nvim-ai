@@ -5,7 +5,7 @@ M.defaults = {
 	-- Command and mapping used to launch a request.
 	command = "AIContext",
 	stop_command = "AIContextStop",
-	keymap = "<leader>ac",
+	keymap = "<leader>ai",
 	-- Visual-mode mapping. When nil it falls back to `keymap`; set to false
 	-- to disable the visual mapping.
 	visual_keymap = nil,
