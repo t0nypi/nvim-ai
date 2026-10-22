@@ -39,6 +39,26 @@ function M.has_unstaged_changes(root)
 	return vim.v.shell_error == 1
 end
 
+---Return `path` relative to `cwd` when it lives inside it, absolute otherwise.
+---@param path string
+---@param cwd string
+---@return string
+function M.relpath(path, cwd)
+	local abs = vim.fs.normalize(vim.fn.fnamemodify(path, ":p"))
+	local base = vim.fs.normalize(vim.fn.fnamemodify(cwd, ":p"))
+	if #base > 1 and base:sub(-1) == "/" then
+		base = base:sub(1, -2)
+	end
+	if abs == base then
+		return "."
+	end
+	local prefix = base == "/" and "/" or (base .. "/")
+	if abs:sub(1, #prefix) == prefix then
+		return abs:sub(#prefix + 1)
+	end
+	return abs
+end
+
 ---Shell-escape and join an argv list into a single command string.
 ---@param args string[]
 ---@return string

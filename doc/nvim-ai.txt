@@ -42,14 +42,28 @@ Calling it more than once is safe.
 :AIContext      Ask for a request and launch the contextual agent in a tmux
                 split pane. The current buffer is saved first.
 
+                                                *:AIContextContinue*
+:AIContextContinue
+                Resume the newest pi session for the current cwd, prefilling
+                the agent editor with the current file/line (or selection)
+                context so you only type the request. If the session already
+                runs in a pane in this tmux window, that pane is focused and
+                the prefill is pasted into it.
+
                                                     *:AIContextStop*
 :AIContextStop  Stop watching the change file.
 
-Default mapping: `<leader>ac` in normal mode.
+Default mappings: `<leader>ai` in normal mode starts a new session and
+`<leader>ac` continues the latest one.
 
-The mapping also works in visual mode: the selection is captured and the
-appended system prompt describes its start/end position instead of the cursor
-line. Set `visual_keymap` to override or disable (`false`) the visual mapping.
+Both mappings also work in visual mode: the selection is captured and the
+context describes its start/end position instead of the cursor line. Set
+`visual_keymap` / `continue_visual_keymap` to override or disable (`false`) the
+visual mappings.
+
+`AIContextContinue` leaves `.currentChange` untouched and refreshes the
+quickfix watcher, because the same session keeps updating that file. If no
+session exists yet, run `:AIContext` first.
 
 ==============================================================================
 5. CONFIGURATION                                  *nvim-ai-configuration*
@@ -58,8 +72,16 @@ All options are passed to |nvim-ai.setup()|.
 
     command                     string   command to create (default "AIContext")
     stop_command                string   stop command (default "AIContextStop")
-    keymap                      string   normal-mode mapping (default "<leader>ac")
+    keymap                      string   normal-mode mapping (default "<leader>ai")
     visual_keymap               string   visual-mode mapping; nil = `keymap`, false = off
+    continue_command            string   continue command (default "AIContextContinue")
+    continue_keymap             string   continue mapping (default "<leader>ac")
+    continue_visual_keymap      string   visual continue mapping; nil = continue_keymap
+    session_id_prefix           string   session id prefix (default "nvim-ai")
+    session_dir                 string   session root override (default nil)
+    pane_search_all_windows     boolean  search all tmux windows (default false)
+    prefill_extension           string   bundled prefill extension path
+    prefill_flag               string   flag the extension registers
     cmd                         string   agent executable (default "pi")
     extra_args                  table    extra args (default {})
     append_system_prompt_flag   string   flag (default "--append-system-prompt")
@@ -89,11 +111,33 @@ The agent is asked to keep the change file cumulative across the whole
 session: first round plus later adjustments, minus anything replaced or
 reverted.
 
+`:AIContextContinue` resolves the newest session for the cwd (recorded id
+first, then the newest `.jsonl` by mtime), reads its header id, and builds a
+prefill sentence such as:
+
+    Now, with particular focus on file: lua/foo.lua, at line: 12, satisfy the following request:
+
+If the session's pane exists in the current tmux window, the pane is focused
+and the sentence is pasted with bracketed paste (never submitted). Otherwise a
+pane is split and pi resumes with `--session-id`, `--append-system-prompt` (so
+the change-file contract survives) and a bundled extension
+`pi/nvim-ai-prefill.ts` that puts the sentence in the editor. Pane lookup uses
+the `@nvim_ai_session` user option, falling back to the pane title.
+
+Caveats: pane lookup is limited to the current tmux window unless
+`pane_search_all_windows` is true; otherwise a second pi may be started on the
+same session file in another window. A program can overwrite a pane title, so
+the user option is the primary lookup key.
+
 ==============================================================================
 7. API                                                        *nvim-ai-api*
 
                                                     *nvim-ai.run()*
 require("nvim-ai").run()        Launch a request programmatically.
+
+                                            *nvim-ai.run_continue()*
+require("nvim-ai").run_continue()
+                                Continue the latest session programmatically.
 
                                                     *nvim-ai.stop()*
 require("nvim-ai").stop()       Stop watching the change file.

@@ -25,6 +25,9 @@ command is configurable.
   latest round.
 - **Clean working tree** — saves the buffer first and warns about unstaged
   changes before launching (opening fugitive if you decline).
+- **Continue a session** — `:AIContextContinue` resumes the newest pi session
+  for the current directory, prefilling the agent editor with the current
+  file/line (or selection) so you only type the request.
 
 ## Requirements
 
@@ -43,8 +46,11 @@ With [lazy.nvim](https://github.com/folke/lazy.nvim):
   "your-user/nvim-ai",
   opts = {},
   -- Optional: lazy-load on the mapping/command.
-  keys = { { "<leader>ac", desc = "AI request in editor context" } },
-  cmd = { "AIContext", "AIContextStop" },
+  keys = {
+    { "<leader>ai", desc = "AI request in editor context" },
+    { "<leader>ac", desc = "Continue the latest AI session" },
+  },
+  cmd = { "AIContext", "AIContextContinue", "AIContextStop" },
 }
 ```
 
@@ -64,13 +70,14 @@ For local development, point lazy at the checkout:
 | Command | Description |
 | --- | --- |
 | `:AIContext` | Ask for a request and launch the contextual agent. |
+| `:AIContextContinue` | Continue the latest session for this cwd, with the editor prefilled. |
 | `:AIContextStop` | Stop watching the change file. |
 
-Default mapping: `<leader>ac` in normal mode. The same mapping works in visual
-mode: the selection is captured and the prompt describes its start/end position
-instead of the cursor line.
+Default mappings: `<leader>ai` starts a new session and `<leader>ac` continues
+the latest one. Both work in visual mode: the selection is captured and the
+context describes its start/end position instead of the cursor line.
 
-The flow:
+The `:AIContext` flow:
 
 1. Prompts `AI request:` in the command line.
 2. Saves the current buffer.
@@ -81,6 +88,21 @@ The flow:
 5. Polls `<cwd>/.currentChange` and parses matching lines into the quickfix
    list.
 
+The `:AIContextContinue` flow:
+
+1. Saves the current buffer.
+2. Resolves the newest pi session for this cwd (recorded id first, then the
+   newest session file on disk).
+3. If that session is already running in a pane in the current tmux window, it
+   focuses the pane and pastes a prefill sentence (not submitted) describing the
+   file/line or selection.
+4. Otherwise it splits a pane, resumes the session with `--session-id`, and a
+   bundled pi extension prefills the editor with the same sentence.
+5. Refreshes the quickfix watcher without clearing `.currentChange`, since the
+   same session keeps updating it.
+
+If no session exists yet, run `:AIContext` first.
+
 ## Configuration
 
 ```lua
@@ -88,9 +110,24 @@ require("nvim-ai").setup({
   -- Commands / mapping.
   command = "AIContext",
   stop_command = "AIContextStop",
-  keymap = "<leader>ac",
+  keymap = "<leader>ai",
   -- Visual-mode mapping. When nil it falls back to `keymap`; false disables it.
   visual_keymap = nil,
+
+  -- Continue commands/mappings (visual falls back to continue_keymap).
+  continue_command = "AIContextContinue",
+  continue_keymap = "<leader>ac",
+  continue_visual_keymap = nil,
+
+  -- Session discovery. session_dir overrides $PI_CODING_AGENT_SESSION_DIR
+  -- (which overrides ~/.pi/agent/sessions).
+  session_id_prefix = "nvim-ai",
+  session_dir = nil,
+  -- Search every tmux window for the running session pane, not just this one.
+  pane_search_all_windows = false,
+  -- Bundled extension used to prefill pi's editor when resuming.
+  prefill_extension = "<plugin-root>/pi/nvim-ai-prefill.ts",
+  prefill_flag = "--nvim-ai-prefill-file",
 
   -- Agent executable and extra args (inserted before the append flag).
   cmd = "pi",
@@ -130,15 +167,27 @@ through the changes. Emptying the file clears the quickfix list. Add
 `.currentChange` to your global/local git excludes if you do not want it
 showing up as untracked.
 
+### Session lookup caveats
+
+- Pane lookup is scoped to the current tmux window by default. If the session
+  runs in another window, `:AIContextContinue` starts a second pi on the same
+  session file; set `pane_search_all_windows = true` to widen the search.
+- Panes are tagged with the session id both as their title and as the
+  `@nvim_ai_session` user option. The option is the primary key because a
+  program can overwrite a pane title via OSC.
+- Session directory encoding depends on pi and Neovim agreeing on the cwd. tmux
+  panes are launched with `-c <cwd>`, so they do.
+
 ## API
 
 ```lua
 local ai = require("nvim-ai")
 
-ai.setup({ ... })  -- configure + register commands/keymap
-ai.run()           -- launch a request programmatically
-ai.stop()          -- stop watching the change file
-ai.get_config()    -- current merged options
+ai.setup({ ... })    -- configure + register commands/keymap
+ai.run()             -- launch a request programmatically
+ai.run_continue()    -- continue the latest session programmatically
+ai.stop()            -- stop watching the change file
+ai.get_config()      -- current merged options
 ```
 
 ## Development

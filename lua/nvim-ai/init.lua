@@ -22,6 +22,10 @@ function M.setup(opts)
 		M.run()
 	end, { force = true, desc = "AI request in editor context" })
 
+	vim.api.nvim_create_user_command(options.continue_command, function()
+		M.run_continue()
+	end, { force = true, desc = "Continue the latest AI session in editor context" })
+
 	vim.api.nvim_create_user_command(options.stop_command, function()
 		M.stop()
 	end, { force = true, desc = "Stop watching the AI change file" })
@@ -29,6 +33,10 @@ function M.setup(opts)
 	vim.keymap.set("n", options.keymap, function()
 		M.run()
 	end, { desc = "AI request in editor context" })
+
+	vim.keymap.set("n", options.continue_keymap, function()
+		M.run_continue()
+	end, { desc = "Continue the latest AI session in editor context" })
 
 	local visual_keymap = options.visual_keymap
 	if visual_keymap == nil then
@@ -40,6 +48,18 @@ function M.setup(opts)
 			vim.cmd("normal! \27")
 			M.run({ range = range })
 		end, { desc = "AI request for visual selection" })
+	end
+
+	local continue_visual_keymap = options.continue_visual_keymap
+	if continue_visual_keymap == nil then
+		continue_visual_keymap = options.continue_keymap
+	end
+	if continue_visual_keymap then
+		vim.keymap.set("x", continue_visual_keymap, function()
+			local range = selection.range()
+			vim.cmd("normal! \27")
+			M.run_continue({ range = range })
+		end, { desc = "Continue the latest AI session for visual selection" })
 	end
 
 	local group = vim.api.nvim_create_augroup("NvimAi", { clear = true })
@@ -55,6 +75,9 @@ end
 
 ---Launch a contextual request.
 M.run = agent.run
+
+---Continue the latest existing session for the current cwd.
+M.run_continue = agent.run_continue
 
 ---Stop watching the change file.
 M.stop = quickfix.stop
