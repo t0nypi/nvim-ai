@@ -45,6 +45,17 @@ local function update(content)
 	return #vim.fn.getqflist()
 end
 
+---Read the change file once and mirror its present contents into the quickfix
+---list, without starting or touching the polling watcher.
+---@param path string|nil change-file path; defaults to cwd/<change_file>
+---@return integer number of quickfix entries
+function M.refresh(path)
+	local opts = config.get()
+	path = path or vim.fs.joinpath(vim.fn.getcwd(), opts.change_file)
+	-- `update` owns all parsing/filtering; we only hand it the file contents.
+	return update(util.read_file(path) or "")
+end
+
 ---Start polling `path` and mirroring it into the quickfix list.
 ---@param path string
 function M.start(path)

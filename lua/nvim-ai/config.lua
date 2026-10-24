@@ -13,6 +13,7 @@ M.defaults = {
 	-- Command and mapping used to launch a request.
 	command = "AIContext",
 	stop_command = "AIContextStop",
+	refresh_command = "AIContextRefresh",
 	keymap = "<leader>ai",
 	-- Visual-mode mapping. When nil it falls back to `keymap`; set to false
 	-- to disable the visual mapping.
@@ -55,7 +56,7 @@ M.defaults = {
 	-- Polling interval (ms) for the change file.
 	poll_interval = 500,
 	-- Automatically open the quickfix window when the list is (re)populated.
-	open_quickfix = false,
+	open_quickfix = true,
 	-- errorformat used to parse the change file.
 	errorformat = "%f:%l:%c - %m",
 }

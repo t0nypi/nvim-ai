@@ -30,6 +30,10 @@ function M.setup(opts)
 		M.stop()
 	end, { force = true, desc = "Stop watching the AI change file" })
 
+	vim.api.nvim_create_user_command(options.refresh_command, function()
+		M.refresh()
+	end, { force = true, desc = "Reload current changes in quickfix list" })
+
 	vim.keymap.set("n", options.keymap, function()
 		M.run()
 	end, { desc = "AI request in editor context" })
@@ -79,8 +83,10 @@ M.run = agent.run
 ---Continue the latest existing session for the current cwd.
 M.run_continue = agent.run_continue
 
----Stop watching the change file.
 M.stop = quickfix.stop
+
+---One-shot refresh of the quickfix list from the change file.
+M.refresh = quickfix.refresh
 
 ---@return table current merged options
 M.get_config = config.get
