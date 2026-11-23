@@ -25,7 +25,7 @@ end
 ---@return integer number of entries
 local function update(content)
 	local opts = config.get()
-	local lines = vim.split(content or "", "\n", { plain = true })
+	local lines = vim.split(content, "\n", { plain = true })
 	local filtered = {}
 	for _, line in ipairs(lines) do
 		-- keep only lines that look like `filepath:line:col - summary`
@@ -34,6 +34,7 @@ local function update(content)
 		end
 	end
 	if #filtered == 0 then
+		vim.print("No changes to parse")
 		vim.fn.setqflist({}, " ")
 		return 0
 	end
@@ -53,7 +54,12 @@ function M.refresh(path)
 	local opts = config.get()
 	path = path or vim.fs.joinpath(vim.fn.getcwd(), opts.change_file)
 	-- `update` owns all parsing/filtering; we only hand it the file contents.
-	return update(util.read_file(path) or "")
+
+	local content = assert(util.read_file(path), "Cannot read file " .. opts.change_file)
+	local changes = update(content)
+
+	vim.print("Updated quickfix list with " .. changes .. " changes")
+	return changes
 end
 
 ---Start polling `path` and mirroring it into the quickfix list.
