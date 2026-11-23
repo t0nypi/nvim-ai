@@ -25,13 +25,13 @@ function M.build_contract()
 	local parts = {
 		"If you need to change files in order to satisfy the user request, don't just produce a summary at the end of what you have done; "
 		..
-		"you should also put an inline comment for each change you do (if the filetype has a comment format), explaining the change in the comment. "
+		"leave as few comments in the code as possible instead, and insert the explanation directly in the change file described below. "
 		..
 		"General notes, clarifying questions and other broader comments should still be reported in the summary of the agent's session round.",
 		"",
-		"If the request of the user is to explain or describe some code, you should create a path in the codebase by leaving comments in each relevant point."
+		"If the request of the user is to explain or describe some code, do not leave comments in the code; instead insert the explanation directly in the change file, one point per relevant code position."
 		..
-		"When creating the quickfix list, the points in code with these comments should be in the correct order to have a good and clear explaination",
+		" The positions should be listed in the correct order so the quickfix list forms a clear and complete path for the explanation.",
 		"You may keep talking with the user in this same session across multiple rounds of changes. "
 		..
 		"Whenever you make changes — in this round or in any later round — you must always report them in the change file described below, "
@@ -47,7 +47,7 @@ function M.build_contract()
 		.. change_path
 		.. "`, one position per line, using exactly this format:",
 		"",
-		"    filepath:line:col - <very short summary of change>",
+		"    filepath:line:col - <explanation of the change>",
 		"",
 		"Use absolute file paths. List the positions in a meaningful order (for example top-to-bottom per file) so the user can review them quickly in the quickfix list.",
 		"If no changes are still present, leave the file empty.",
